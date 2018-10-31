@@ -1,13 +1,24 @@
 import express from 'express';
 import bodyParser from 'body-parser';
-import { graphqlExpress, graphiqlExpress } from 'apollo-server-express';
-import {  makeExecutableSchema} from 'graphql-tools'; 
-import { express as voyagerMiddleware } from 'graphql-voyager/middleware';
-import {  find,  filter} from 'lodash';
- 
+import {
+  graphqlExpress,
+  graphiqlExpress
+} from 'apollo-server-express';
+import {
+  makeExecutableSchema
+} from 'graphql-tools';
+import {
+  express as voyagerMiddleware
+} from 'graphql-voyager/middleware';
+import {
+  find,
+  filter
+} from 'lodash';
+
 
 const typeDefs = `
-  
+ 
+
  type Concept {
  	  id: Int!
     conceptLabel : [String]
@@ -37,9 +48,10 @@ const typeDefs = `
     representedVariable : [RepresentedVariable]
  }
 
-
+ # A Represented Variable is variable 
+ # that has an associated definition of the value
  type RepresentedVariable  {
- 	id: Int!
+ 	  id: Int!
     shortName : String
     isTypicallySensitive : Boolean!
     name : String!
@@ -48,41 +60,67 @@ const typeDefs = `
   #  isMeasuredBy : ValueDomain!
 } 
  
+
+# A question within an instrument
 type Question {
-	id: Int!
-    questionPurpose : String
-    questionText : String
+    id: Int!
+    # The name of the question
     name : String!
-    description : String!
+    # The description for the question 
+    questionPurpose : String
+    # The display text for the question
+    questionText : String
+    # A reference to an associated question
     references : [Question]
+    # The Represented Variable or Variable and associated Value details
     representedVariable : RepresentedVariable!
 }
 
 
-
+# A collection of Questions for a specific Unit Type
 type QuestionBlock {
-	id: Int!
+    id: Int!
+    # The name of the question block
     name : String!
+    # The description for the question block 
     description : String!
+    # A list of questions within the block 
     questions : [Question]
 } 
 
 
 
-  # the schema allows the following query:
+  # the schema allows the following queries:
   type Query {
+    # List all Question Blocks
     allQuestionBlocks : [QuestionBlock],
+    # List all Questions
     allQuestions : [Question],
+    # List all Represented Variables
     allRepresentedVariables : [RepresentedVariable],
+    # List all Variables
     allVariables : [Variable],
+    # List all Unit Types
     allUnitTypes: [UnitType],
+    # List all Cooncepts
     allConcepts: [Concept],
     
+    # Get a specific Question Block based on the ID
     QuestionBlock(id: Int!): QuestionBlock,
+
+    # Get a specific Question based on the ID
     Question(id: Int!): Question,
+
+    # Get a specific Represented Variable based on the ID
     RepresentedVariable(id: Int!): RepresentedVariable,
+
+    # Get a specific Variable based on the ID
     Variable(id: Int!): Variable,
+
+    # Get a specific Unit Type based on the ID
     UnitType(id: Int!): UnitType,
+
+    # Get a specific Concept based on the ID
     Concept(id: Int!): Concept
     
   }
@@ -92,98 +130,102 @@ type QuestionBlock {
 
 
 const resolvers = {
-    Query: {
-        allQuestionBlocks: () => QUESTION_BLOCKS,
-        allQuestions: () => QUESTIONS,
-        allRepresentedVariables: () => REPRESENTED_VARIABLES,
-        allVariables: () => VARIABLES,
-        allUnitTypes: () => UNIT_TYPES,
-        allConcepts: () => CONCEPTS,
+  Query: {
+    allQuestionBlocks: () => QUESTION_BLOCKS,
+    allQuestions: () => QUESTIONS,
+    allRepresentedVariables: () => REPRESENTED_VARIABLES,
+    allVariables: () => VARIABLES,
+    allUnitTypes: () => UNIT_TYPES,
+    allConcepts: () => CONCEPTS,
 
-        QuestionBlock: (_, {
-            id
-        }) => find(QUESTION_BLOCKS, {
-            id: id
-        }),
-        Question: (_, {
-            id
-        }) => find(QUESTIONS, {
-            id: id
-        }),
-        RepresentedVariable: (_, {
-            id
-        }) => find(REPRESENTED_VARIABLES, {
-            id: id
-        }),
-        Variable: (_, {
-            id
-        }) => find(VARIABLES, {
-            id: id
-        }),
-        UnitType: (_, {
-            id
-        }) => find(UNIT_TYPES, {
-            id: id
-        }),
-        Concept: (_, {
-            id
-        }) => find(CONCEPTS, {
-            id: id
-        }),
+    QuestionBlock: (_, {
+      id
+    }) => find(QUESTION_BLOCKS, {
+      id: id
+    }),
+    Question: (_, {
+      id
+    }) => find(QUESTIONS, {
+      id: id
+    }),
+    RepresentedVariable: (_, {
+      id
+    }) => find(REPRESENTED_VARIABLES, {
+      id: id
+    }),
+    Variable: (_, {
+      id
+    }) => find(VARIABLES, {
+      id: id
+    }),
+    UnitType: (_, {
+      id
+    }) => find(UNIT_TYPES, {
+      id: id
+    }),
+    Concept: (_, {
+      id
+    }) => find(CONCEPTS, {
+      id: id
+    }),
 
-    },
-    RepresentedVariable: {
-        variable: (representedVariable) => find(VARIABLES, {
-            id: representedVariable.takesMeaningFrom
-        }),
-    },
-    Variable: {
-        representedVariable: (variable) => filter(REPRESENTED_VARIABLES, {
-            id: variable
-        }),
-    },
+  },
+  RepresentedVariable: {
+    variable: (representedVariable) => find(VARIABLES, {
+      id: representedVariable.takesMeaningFrom
+    }),
+  },
+  Variable: {
+    representedVariable: (variable) => filter(REPRESENTED_VARIABLES, {
+      id: variable
+    }),
+  },
 
-    QuestionBlock: {
-        questions: (root) => root.questions.map(quest => {
-            return QUESTIONS.filter(
-                singleQ => singleQ.id === quest
-            )[0];
-        }),
-    },
+  QuestionBlock: {
+    questions: (root) => root.questions.map(quest => {
+      return QUESTIONS.filter(
+        singleQ => singleQ.id === quest
+      )[0];
+    }),
+  },
 
-    Question: {
-        representedVariable: (question) => find(REPRESENTED_VARIABLES, {
-            id: question.representedVariableId
-        }),
-    }
+  Question: {
+    representedVariable: (question) => find(REPRESENTED_VARIABLES, {
+      id: question.representedVariableId
+    }),
+  }
 };
 
 
- 
 const schema = makeExecutableSchema({
   typeDefs,
   resolvers,
 });
- 
+
 const GRAPHQL_PORT = 3000;
 
 const app = express();
 
-app.use('/graphql', bodyParser.json(), graphqlExpress({ schema }));
-app.use('/graphiql', graphiqlExpress({ endpointURL: '/graphql' }));
-app.use('/voyager', voyagerMiddleware({ endpointUrl: '/graphql' }));
+app.use('/graphql', bodyParser.json(), graphqlExpress({
+  schema
+}));
+app.use('/graphiql', graphiqlExpress({
+  endpointURL: '/graphql'
+}));
+app.use('/voyager', voyagerMiddleware({
+  endpointUrl: '/graphql'
+}));
 
 
 app.listen(GRAPHQL_PORT, () =>
   console.log(
     `GraphiQL is now running on http://localhost:${GRAPHQL_PORT}/graphiql`
-  )   
+  )
 );
 
 
 
-const CONCEPTS = [
-  {
+const CONCEPTS = [{
     id: 0,
     name: 'CONCEPT',
     description: 'CONCEPT TBD'
@@ -200,8 +242,7 @@ const CONCEPTS = [
   }
 ];
 
-const UNIT_TYPES = [
-  {
+const UNIT_TYPES = [{
     id: 0,
     name: 'UNIT TYPE',
     description: 'UNIT TYPE TBD',
@@ -230,11 +271,11 @@ const UNIT_TYPES = [
     name: 'Social Episode',
     description: 'The Social episode unit type is used when the data is about a characteristic or grouping of social units, rather than a social unit type (i.e.: a person, income unit, family, or household).',
     isBasedOn: 3
-  }];
+  }
+];
 
 
-const VARIABLES = [
-  {
+const VARIABLES = [{
     id: 0,
     name: 'VARIABLE',
     description: 'VARIABLE TBD',
@@ -247,11 +288,11 @@ const VARIABLES = [
     description: 'Whether a person has had physical force or violence used against them',
     unitTypeId: 1,
     measures: 0
-  }];
+  }
+];
 
 
-const REPRESENTED_VARIABLES = [
-  {
+const REPRESENTED_VARIABLES = [{
     id: 0,
     name: 'REPRESENTED VARIABLES',
     description: 'REPRESENTED VARIABLES TBD',
@@ -314,8 +355,7 @@ const REPRESENTED_VARIABLES = [
 ];
 
 
-const QUESTIONS = [
-  {
+const QUESTIONS = [{
     id: 0,
     name: 'QUESTION',
     description: 'QUESTIONS TBD',
@@ -377,8 +417,7 @@ const QUESTIONS = [
   }
 ];
 
-const QUESTION_BLOCKS = [
-  {
+const QUESTION_BLOCKS = [{
     id: 0,
     name: 'QUESTION_BLOCKS',
     description: 'QUESTION_BLOCKS TBD',
@@ -389,5 +428,5 @@ const QUESTION_BLOCKS = [
     name: 'Victimisation',
     description: 'Victimisation question module',
     questions: [1, 2, 3, 4, 5, 6, 7, 8, 9]
-  }];
-
+  }
+];
