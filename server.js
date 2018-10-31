@@ -67,6 +67,8 @@ type Question {
     # The name of the question
     name : String!
     # The description for the question 
+    description : String!
+    # The purpose behind a question 
     questionPurpose : String
     # The display text for the question
     questionText : String
